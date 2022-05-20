@@ -85,10 +85,21 @@ function newdiv (email) {
     
     //update history
     history.pushState(this.dataset.email_id, "", `read${this.dataset.email_id}`);
-
+    
+    // after displaing email... check if it is unread and mark as read. Else do nothing.
+    if (Email_memory[id].read == false) {
+      fetch (`emails/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({'read':'True'})
+      })
+      .then(response => {
+          console.log(response)
+        })
+    }
+    
     // call function to view email
     view_email(Email_memory[id]);
-
+    
   };
 
   // append btn to div and then that div to container div
@@ -102,21 +113,6 @@ function view_email(email) {
 
   console.log(email.body);
 
-  if (Email_memory[id].read == false) {
-    fetch (`emails/${id}`, {
-      method: 'PUT',
-      body: {
-        'read':'True'
-      }
-    })
-    .then(response => {
-        return response.json()
-      })
-    .then(data =>{
-      console.log(data);
-    })
-  }
-
   document.querySelector('#read-body').innerHTML = `${email.body}`;
   document.querySelector('#read-subject').innerHTML = `${email.sender}: ${email.subject}`;
   document.querySelector('#read-timestamp').innerHTML = `read: ${email.read}; ${email.timestamp}`;
@@ -124,8 +120,6 @@ function view_email(email) {
   document.querySelector('#read-view').style.display = 'block';
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'none';
-
-
 };
 
 function compose_email() {

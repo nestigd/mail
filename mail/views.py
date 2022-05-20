@@ -108,7 +108,8 @@ def mailbox(request, mailbox):
 @csrf_exempt
 @login_required
 def email(request, email_id):
-
+    print(f"this is the reques \n {request}")
+    
     # Query for requested email
     try:
         email = Email.objects.get(user=request.user, pk=email_id)
@@ -121,14 +122,25 @@ def email(request, email_id):
 
     # Update whether email is read or should be archived
     elif request.method == "PUT":
-        print("PUT REQUEST OK")
-        print(request.body)
+
+        # convert JSON string to Python DICT
         data = json.loads(request.body)
+
+        # print dict... just a test
         print(data)
-        if data.get("read") is not None:
-            email.read = data["read"]
-        if data.get("archived") is not None:
-            email.archived = data["archived"]
+
+        # Set the email as read or unread when requested.
+        if data.get("read") == 'True':
+            email.read = True
+        elif data("read") == 'False':
+            email.read = False
+
+        #archive or unarchive when requested
+        if data.get("archive") == 'True':
+            email.archived = True
+        elif data.get("archive") == 'False':
+            email.archived = False
+
         email.save()
         return HttpResponse(status=204)
 
