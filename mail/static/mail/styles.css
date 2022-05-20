@@ -1,0 +1,15 @@
+textarea {
+    min-height: 400px;
+}
+
+.btn-light{
+    width: 100%;
+    text-align: left;
+    border-style: solid;
+    border-color:  rgb(229, 223, 223);
+    margin-bottom: 4px;
+}
+
+#read-body{
+    padding: 20px;
+}
