@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
   
   // Event listener: go to compose mail mode
-  document.querySelector('#compose').addEventListener('click', compose_email);
+  document.querySelector('#compose').onclick = compose_email;
   
   // Event listener: call function to submit the new email and save into the database.
   document.querySelector('#compose-form').addEventListener('submit', submit_email);
@@ -165,12 +165,11 @@ function view_email(email) {
 
     archiveBtn.onclick = function () {
     archive_email(email, true);
-    
+
     load_mailbox('inbox');
     };
   } 
   
-
   // change placeholder button to newly created button.
   let placeholder = document.querySelector('#archive');
   placeholder.replaceWith(archiveBtn);
@@ -183,7 +182,11 @@ function view_email(email) {
   replyBtn.innerHTML = 'Reply';
   replyBtn.id = 'replyBtn';
   replyBtn.dataset.email_id = email.id;
+  replyBtn.onclick = function (){
+    compose_email(email);
+  };
 
+  // replace placeholder HTML with created button
   let placeholder2 = document.querySelector('#reply');
   placeholder2.replaceWith(replyBtn);
   document.querySelector('#replyBtn').id = 'reply';
@@ -224,18 +227,27 @@ function archive_email (email, bool){
 }
 
 
-function compose_email() {
+function compose_email(email) {
 
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
   document.querySelector('#read-view').style.display = 'none';
 
+    // Clear out composition fields
+    document.querySelector('#compose-recipients').value = ' ';
+    document.querySelector('#compose-subject').value = ' ';
+    document.querySelector('#compose-body').value = ' ';
+   
+     
+  // when an argument is received, pre-populate the email 
+  // body with the data of the email we are replying to.
+  if (typeof email.body !== 'undefined'){
+    document.querySelector('#compose-recipients').value = `${email.sender}`
+    document.querySelector('#compose-subject').value = `RE: ${email.subject}`;
+    document.querySelector('#compose-body').value = `\n ${email.sender} wrote on day ${email.timestamp}:\n ${email.body}`;
+  }
 
-  // Clear out composition fields
-  document.querySelector('#compose-recipients').value = '';
-  document.querySelector('#compose-subject').value = '';
-  document.querySelector('#compose-body').value = '';
 }
 
 
@@ -271,3 +283,4 @@ function submit_email(event){
  
   return false;
 };
+
