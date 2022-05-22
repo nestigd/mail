@@ -1,30 +1,38 @@
-// Event listener calls function when DOM is ready
+
+// MAIN CODE
+// This event listener waits for the DOM to be fully loaded
+// before any functions get called
 document.addEventListener('DOMContentLoaded', function() {
 
-    // By default, load the inbox
+    // By default, call function to load the inbox
   load_mailbox('inbox');
 
-  // Event listeners: when buttons are clicked, load the corresponding mailbox
+  // Event listeners: all sections at the top of the page: inbox, sent, archive load the corresponding mailbox
   document.querySelector('#inbox').addEventListener('click', () => load_mailbox('inbox'));
   document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
+  
+  // Event listener: go to compose mail mode
   document.querySelector('#compose').addEventListener('click', compose_email);
   
-  // Event listener: Add new email to database
-  const form = document.querySelector('#compose-form');
-  form.addEventListener('submit', submit_email);
+  // Event listener: call function to submit the new email and save into the database.
+  document.querySelector('#compose-form').addEventListener('submit', submit_email);
 });
 
-// Handle pop state (history arrows)
+// Handle history popstate.
 window.onpopstate = function(event) {
   
-  // in case there is no email in the state, load the inbox
+  // in case the url contains no specific information, load the inbox
   if (event.state == null || event.state == undefined || event.state == "") {
     load_mailbox('inbox');
   } 
-  // else, load the previous email.
-  else {
+  // in case the event.state contains an email id, this must be a non negative number
+  else if (event.state >= 0){
     view_email(Email_memory[event.state]);
+  }
+  else{
+    //throw an alert in case something goes wrong.
+    alert("error when handling popstate");
   }
 }
 
@@ -32,9 +40,11 @@ window.onpopstate = function(event) {
 
 // - - - - -  - - - - - - - - - - - - - - - - DECLARATIONS  - - - - - - - - - - - - - - - - - - - - - - - - -
 
-// load the parsed mailbox
+// load the parsed mailbox in memory, then call a function to display these emails in separate divs.
 function load_mailbox(mailbox) {
   
+  // When loading a mailbox, push empty state to history. We are resetting the to an empty string in case 
+  // any emails have been viewed and for this reason there is information in the url already
   const blank = "";
   history.pushState(blank, "", "./");
   
@@ -43,33 +53,38 @@ function load_mailbox(mailbox) {
   document.querySelector('#compose-view').style.display = 'none';
   document.querySelector('#read-view').style.display = 'none';
 
-  // This global obj will cache requested emails. It gets reset every time new emails are fetched.
+  // This global obj will keep a bunch of emails in memory. 
+  // I decided to fetch them once every time we call for a mailbox...
+  // not every time I need to read a single email
   Email_memory = {};
   
   // Show the mailbox name <h3> and get rid of child elements if already present
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
 
   // GET emails:
-  // get emails from a particular mailbox as JSON data
+  // get emails for this mailbox as JSON data
   fetch(`emails/${mailbox}`)
   .then(response => response.json())
 
-  // iterate through email objects and call function to create new divs while saving the emails to cache.
+  // iterate through email objects and call function to CREATE NEW DIVS while saving the emails to cache.
   .then(data => {
-    data.forEach(newdiv, this);
+    data.forEach(makeEmailDiv, this);
     console.log(Email_memory);
   })
-
-  // catch exceptions and manage
+  // catch exceptions and show me what happened.
   .catch(error => {alert (error); console.log(error);});
 }
 
 
-function newdiv (email) {
 
-  // save this email for future reading without having to fetch it again.
+// the email will be displayed as a DIV containing a Button. 
+// The button calls a function to display its email when clicked.
+function makeEmailDiv (email) {
+
+  // use the previously declared Email_memory object to keep the emails cached.
   let id = email.id
   Email_memory[id] = email;
+
 
   // create parent DIV
   const element = document.createElement('div');
@@ -99,7 +114,7 @@ function newdiv (email) {
     
     // call function to view email
     view_email(Email_memory[id]);
-    
+
   };
 
   // append btn to div and then that div to container div
@@ -108,19 +123,106 @@ function newdiv (email) {
 }
 
 
-
+// Function to hide all non relevant content and display the contents of the email
+// including buttons to archive, unarchive and to reply.
 function view_email(email) {
 
-  console.log(email.body);
-
+  // populate every field with the email data  
   document.querySelector('#read-body').innerHTML = `${email.body}`;
   document.querySelector('#read-subject').innerHTML = `${email.sender}: ${email.subject}`;
   document.querySelector('#read-timestamp').innerHTML = `read: ${email.read}; ${email.timestamp}`;
 
+  // create archive button
+  const archiveBtn = document.createElement('button');
+  archiveBtn.className = 'btn btn-secondary';
+  archiveBtn.id = 'archiveBtn';
+  archiveBtn.dataset.email_id = email.id;
+  
+  // onclick event listener
+  console.log(`email.archived: ${email.archived}`);
+
+  //change the "archive or unarchive" button depending on the current status
+    // in case already archived, show me a button to unarchive
+  if (email.archived == true){
+    
+    // set the text inside the button
+    archiveBtn.innerHTML = 'unarchive';
+    
+    // give onclick property
+    archiveBtn.onclick = function () {
+      
+      // function to change the archived property to 
+      archive_email(email, false);
+      
+      // go back to the inbox
+      load_mailbox('inbox');
+    }
+
+    // exactly as above but for the opposite condition....
+  } else if (email.archived == false){
+
+    archiveBtn.innerHTML = 'archive';
+
+    archiveBtn.onclick = function () {
+    archive_email(email, true);
+    
+    load_mailbox('inbox');
+    };
+  } 
+  
+
+  // change placeholder button to newly created button.
+  let placeholder = document.querySelector('#archive');
+  placeholder.replaceWith(archiveBtn);
+  document.querySelector('#archiveBtn').id = 'archive';
+
+ 
+  // create reply button
+  const replyBtn = document.createElement('button');
+  replyBtn.className = 'btn btn-primary';
+  replyBtn.innerHTML = 'Reply';
+  replyBtn.id = 'replyBtn';
+  replyBtn.dataset.email_id = email.id;
+
+  let placeholder2 = document.querySelector('#reply');
+  placeholder2.replaceWith(replyBtn);
+  document.querySelector('#replyBtn').id = 'reply';
+
+
+  // hide non relevant sections and sow email
   document.querySelector('#read-view').style.display = 'block';
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'none';
+  
 };
+
+
+function archive_email (email, bool){
+
+  // check if the function will archive or unarchive the email.
+  // will be archived if true, otherwise it will be unarchived.
+  let content = 'Blank content';
+  
+  if (bool == true){
+    content = 'True';
+  }else{
+    content = 'False';
+  }
+
+  // test string
+  console.log(`contenuto da inviare al server da archive_email: ${email.id} , content debug. ${content}`);
+
+  // fetch: PUT request
+  fetch (`emails/${email.id}`, {
+    method: 'PUT',
+    body: JSON.stringify({'archived': content})
+  })
+  .then(response => {
+      console.log(response)
+      
+    })
+}
+
 
 function compose_email() {
 

@@ -132,13 +132,13 @@ def email(request, email_id):
         # Set the email as read or unread when requested.
         if data.get("read") == 'True':
             email.read = True
-        elif data("read") == 'False':
+        elif data.get("read") == 'False':
             email.read = False
 
         #archive or unarchive when requested
-        if data.get("archive") == 'True':
+        if data.get("archived") == 'True':
             email.archived = True
-        elif data.get("archive") == 'False':
+        elif data.get("archived") == 'False':
             email.archived = False
 
         email.save()
