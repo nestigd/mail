@@ -244,7 +244,11 @@ function compose_email(email) {
   // body with the data of the email we are replying to.
   if (typeof email.body !== 'undefined'){
     document.querySelector('#compose-recipients').value = `${email.sender}`
-    document.querySelector('#compose-subject').value = `RE: ${email.subject}`;
+    if (!(email.subject.startsWith('RE:'))){
+      document.querySelector('#compose-subject').value = `RE: ${email.subject}`;
+    }else{
+      document.querySelector('#compose-subject').value = `${email.subject}`;
+    }
     document.querySelector('#compose-body').value = `\n ${email.sender} wrote on day ${email.timestamp}:\n ${email.body}`;
   }
 
